@@ -16,7 +16,7 @@ class BookController extends AbstractController
     public function getBookList(BookRepository $bookRepository, SerializerInterface $serializer): JsonResponse
     {
         $bookList = $bookRepository->findAll();
-        $jsonBookList = $serializer->serialize($bookList, 'json');
+        $jsonBookList = $serializer->serialize($bookList, 'json', ['groups' => 'getBooks']);
 
         /*Serialized datas, code status by default, [empty headers], true because already serialized. 
         Default value is false, so careful.*/
@@ -30,7 +30,7 @@ class BookController extends AbstractController
         $book = $bookRepository->find($id);
         //If it exists, the object will be serialized inside a json string. 
         if ($book) {
-            $jsonBook = $serializer->serialize($book,'json');
+            $jsonBook = $serializer->serialize($book,'json', ['groups' => 'getBooks']);
             return new JsonResponse($jsonBook, Response::HTTP_OK, [], true);
         }
         //If it does not exist, the 404 not found will be sent
@@ -42,7 +42,7 @@ class BookController extends AbstractController
     public function getDetailBook(Book $book, SerializerInterface $serializer): JsonResponse
     {
         //ParamConverter = look for the corresponding id inside the entity book and is returned as a Json string.
-        $jsonBook = $serializer->serialize($book, 'json');
+        $jsonBook = $serializer->serialize($book, 'json', ['groups' => 'getBooks']);
         //Headers needed to be included in the response are in json. True = already serialized in Json.
         return new JsonResponse($jsonBook, Response::HTTP_OK, ['accept' => 'json'], true);
     }
