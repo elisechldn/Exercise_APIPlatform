@@ -7,6 +7,7 @@ use App\Repository\AuthorRepository;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\MakerBundle\Validator;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\Normalizer\AbstractNormalizer;
@@ -15,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGenerator;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 class AuthorController extends AbstractController
 {
@@ -30,9 +32,16 @@ class AuthorController extends AbstractController
 
     #[Route('/authors', name: 'createAuthor', methods: ['POST'])]
     public function addAuthor(Request $request, SerializerInterface $serializer, 
-    EntityManager $em, UrlGenerator $urlGenerator, Author $author): JsonResponse
+    EntityManager $em, UrlGenerator $urlGenerator, Author $author, ValidatorInterface $validator): JsonResponse
     {
         $author = $serializer->deserialize($request->getContent(), Author::class, 'json', [], true);
+
+        $errors = $validator->validate($author);
+
+        if ($errors->count() > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+        }
+
         $em->persist($author);
         $em->flush();
 
@@ -42,12 +51,20 @@ class AuthorController extends AbstractController
     }
 
     #[Route('/authors/{id}', name: 'updateAuthor', methods: ['PUT'])]
-    public function updateAuthor(Author $currentAuthor, Request $request, SerializerInterface $serializer, EntityManager $em):JsonResponse
+    public function updateAuthor(Author $currentAuthor, Request $request, SerializerInterface $serializer,
+     EntityManager $em, ValidatorInterface $validator):JsonResponse
     {
         $updatedAuthor = $serializer->deserialize($request->getContent(),
             Author::class,
             'json',
             [AbstractNormalizer::OBJECT_TO_POPULATE => $currentAuthor]);
+
+            //Verifying errors
+            $errors = $validator->validate($updatedAuthor);
+            //If there are mistakes, return a serialized JsonResponse
+            if ($errors->count() > 0) {
+                return New JsonResponse($serializer->serialize($errors, 'json'), JsonResponse::HTTP_BAD_REQUEST, [], true);
+            }
 
             $em->persist($updatedAuthor);
             $em->flush();
